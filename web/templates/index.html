@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SimLife Gene Config Editor</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --bg2: #1a1d27;
+  --bg3: #242836;
+  --border: #2d3248;
+  --text: #e1e4ed;
+  --text2: #8b90a5;
+  --accent: #6c63ff;
+  --accent2: #ff6b6b;
+  --green: #4ecdc4;
+  --orange: #f39c12;
+  --blue: #3498db;
+  --pink: #e91e63;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 280px; min-width: 280px; background: var(--bg2);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+}
+.sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+.sidebar-header h1 { font-size: 16px; color: var(--accent); }
+.sidebar-header p { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.gene-list { flex: 1; overflow-y: auto; padding: 8px; }
+.gene-item {
+  padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  margin-bottom: 4px; transition: background 0.15s;
+  display: flex; align-items: center; gap: 8px;
+}
+.gene-item:hover { background: var(--bg3); }
+.gene-item.active { background: var(--accent); color: white; }
+.gene-tag {
+  font-size: 9px; padding: 2px 6px; border-radius: 4px;
+  font-weight: 600; text-transform: uppercase;
+}
+.gene-tag.builtin { background: var(--blue); color: white; }
+.gene-tag.custom { background: var(--pink); color: white; }
+.gene-name { font-size: 13px; flex: 1; }
+.gene-count { font-size: 11px; color: var(--text2); }
+.sidebar-footer { padding: 12px; border-top: 1px solid var(--border); }
+.btn {
+  padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600; transition: all 0.15s; width: 100%;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #5a52e0; }
+.btn-danger { background: var(--accent2); color: white; }
+.btn-danger:hover { background: #e05555; }
+.btn-success { background: var(--green); color: #111; }
+.btn-success:hover { background: #3dbdb5; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+.btn-outline:hover { background: var(--bg3); }
+.btn + .btn { margin-top: 8px; }
+
+/* ── Main Content ── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.main-header {
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px; background: var(--bg2);
+}
+.main-header h2 { font-size: 18px; flex: 1; }
+.main-content { flex: 1; display: flex; overflow: hidden; }
+
+/* ── Editor Panel ── */
+.editor-panel {
+  flex: 1; overflow-y: auto; padding: 24px; min-width: 400px;
+}
+.field-group { margin-bottom: 20px; }
+.field-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.field-input {
+  width: 100%; padding: 8px 12px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text); font-size: 13px; font-family: inherit;
+}
+.field-input:focus { outline: none; border-color: var(--accent); }
+textarea.field-input { min-height: 60px; resize: vertical; }
+
+/* ── Values Table ── */
+.values-section { margin-top: 24px; }
+.values-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.values-table th {
+  text-align: left; padding: 8px 12px; background: var(--bg3);
+  border-bottom: 1px solid var(--border); font-size: 11px;
+  text-transform: uppercase; color: var(--text2);
+}
+.values-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+.values-table tr:hover { background: var(--bg3); }
+.attr-chip {
+  display: inline-block; padding: 2px 8px; margin: 2px;
+  background: var(--bg); border-radius: 4px; font-size: 11px;
+}
+.attr-key { color: var(--green); }
+.attr-val { color: var(--orange); }
+.add-value-btn {
+  margin-top: 8px; padding: 6px 12px; background: var(--bg3);
+  border: 1px dashed var(--border); border-radius: 6px; color: var(--text2);
+  cursor: pointer; font-size: 12px;
+}
+.add-value-btn:hover { border-color: var(--accent); color: var(--text); }
+.remove-btn {
+  background: none; border: none; color: var(--accent2); cursor: pointer;
+  font-size: 14px; padding: 2px 6px; border-radius: 4px;
+}
+.remove-btn:hover { background: rgba(255,107,107,0.15); }
+
+/* ── Graph Panel ── */
+.graph-panel {
+  width: 420px; min-width: 420px; border-left: 1px solid var(--border);
+  background: var(--bg2); display: flex; flex-direction: column;
+}
+.graph-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 600; }
+.graph-canvas { flex: 1; position: relative; overflow: hidden; }
+.graph-canvas svg { width: 100%; height: 100%; }
+
+/* ── SVG Graph Styles ── */
+.node-circle { cursor: pointer; transition: r 0.15s; }
+.node-circle:hover { r: 28; }
+.node-label { font-size: 10px; fill: white; text-anchor: middle; dominant-baseline: central; pointer-events: none; font-weight: 600; }
+.edge-line { stroke: var(--border); stroke-width: 2; marker-end: url(#arrowhead); }
+.edge-line.bidirectional { stroke-dasharray: none; }
+.edge-line:hover { stroke: var(--accent); stroke-width: 3; }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6); display: none; align-items: center;
+  justify-content: center; z-index: 100;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; width: 480px; max-height: 80vh; overflow-y: auto;
+}
+.modal h3 { margin-bottom: 16px; font-size: 16px; }
+.modal .field-group { margin-bottom: 14px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+  background: var(--green); color: #111; border-radius: 8px;
+  font-size: 13px; font-weight: 600; transform: translateY(80px);
+  transition: transform 0.3s; z-index: 200;
+}
+.toast.show { transform: translateY(0); }
+.toast.error { background: var(--accent2); color: white; }
+
+/* ── Empty State ── */
+.empty-state {
+  display: flex; align-items: center; justify-content: center;
+  height: 100%; color: var(--text2); font-size: 14px; text-align: center;
+  padding: 40px;
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>🧬 SimLife Gene Editor</h1>
+    <p>基因演化路徑配置編輯器</p>
+  </div>
+  <div class="gene-list" id="geneList"></div>
+  <div class="sidebar-footer">
+    <button class="btn btn-primary" onclick="showAddGeneModal()">+ 新增基因</button>
+    <button class="btn btn-success" onclick="saveConfig()">💾 儲存至 JSON</button>
+    <button class="btn btn-outline" onclick="reloadConfig()">🔄 重新載入</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="main-header">
+    <h2 id="editorTitle">選擇一個基因開始編輯</h2>
+    <span id="editorBadge"></span>
+  </div>
+  <div class="main-content">
+    <div class="editor-panel" id="editorPanel">
+      <div class="empty-state" id="emptyState">
+        <div>
+          <div style="font-size:48px;margin-bottom:16px">🧬</div>
+          <div>從左側列表選擇一個基因<br>或點擊「新增基因」開始</div>
+        </div>
+      </div>
+      <div id="editorForm" style="display:none"></div>
+    </div>
+    <div class="graph-panel">
+      <div class="graph-header">📊 演化路徑圖</div>
+      <div class="graph-canvas" id="graphCanvas">
+        <div class="empty-state" id="graphEmpty">
+          <div style="font-size:32px;margin-bottom:12px">📈</div>
+          <div>選擇基因後顯示演化路徑</div>
+        </div>
+        <svg id="graphSvg" style="display:none">
+          <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+              <polygon points="0 0, 10 3.5, 0 7" fill="#6c63ff"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Gene Modal -->
+<div class="modal-overlay" id="addGeneModal">
+  <div class="modal">
+    <h3>新增基因</h3>
+    <div class="field-group">
+      <div class="field-label">基因名稱</div>
+      <input class="field-input" id="newGeneName" placeholder="e.g. bioluminescence">
+    </div>
+    <div class="field-group">
+      <div class="field-label">描述</div>
+      <textarea class="field-input" id="newGeneDesc" placeholder="基因功能描述"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">突變倍數</div>
+      <input class="field-input" id="newGeneMutation" type="number" value="3.0" step="0.5" min="0.5" max="10">
+    </div>
+    <div class="field-group">
+      <div class="field-label">枚舉值 (每行一個，格式: NAME:key=value,key=value)</div>
+      <textarea class="field-input" id="newGeneValues" rows="4"
+        placeholder="NONE:light=0,cost=0&#10;DIM:light=0.3,cost=0.05&#10;BRIGHT:light=0.8,cost=0.15"></textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">演化路徑 (每行一個，格式: FROM->TO1,TO2)</div>
+      <textarea class="field-input" id="newGenePaths" rows="3"
+        placeholder="NONE->DIM&#10;DIM->NONE,BRIGHT&#10;BRIGHT->DIM"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" onclick="createGene()" style="flex:1">建立</button>
+      <button class="btn btn-outline" onclick="closeModal()" style="flex:1">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Value Modal -->
+<div class="modal-overlay" id="editValueModal">
+  <div class="modal">
+    <h3 id="editValueTitle">編輯枚舉值</h3>
+    <div class="field-group">
+      <div class="field-label">值名稱</div>
+      <input class="field-input" id="editValueName" readonly style="opacity:0.7">
+    </div>
+    <div id="editValueAttrs"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn btn-primary" onclick="saveValueEdit()" style="flex:1">儲存</button>
+      <button class="btn btn-outline" onclick="closeValueModal()" style="flex:1">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════════════════
+let currentGene = null;
+let geneData = null;
+let editingValueName = null;
+
+// ════════════════════════════════════════════════════════
+//  API Helpers
+// ════════════════════════════════════════════════════════
+async function api(url, opts = {}) {
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  return res.json();
+}
+
+function toast(msg, isError = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => el.className = 'toast', 2500);
+}
+
+// ════════════════════════════════════════════════════════
+//  Gene List
+// ════════════════════════════════════════════════════════
+async function loadGeneList() {
+  const data = await api('/api/genes');
+  const list = document.getElementById('geneList');
+  list.innerHTML = '';
+  data.genes.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'gene-item' + (currentGene === g.name ? ' active' : '');
+    div.onclick = () => selectGene(g.name);
+    div.innerHTML = `
+      <span class="gene-tag ${g.is_custom ? 'custom' : 'builtin'}">${g.is_custom ? '自定' : '內建'}</span>
+      <span class="gene-name">${g.name}</span>
+      <span class="gene-count">${g.num_values}值</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  Gene Editor
+// ════════════════════════════════════════════════════════
+async function selectGene(name) {
+  currentGene = name;
+  geneData = await api(`/api/genes/${name}`);
+
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('editorForm').style.display = 'block';
+  document.getElementById('editorTitle').textContent = name;
+  document.getElementById('editorBadge').innerHTML =
+    geneData.is_custom ? '<span class="gene-tag custom">自定義</span>' : '<span class="gene-tag builtin">內建</span>';
+
+  renderEditor();
+  renderGraph();
+  loadGeneList();
+}
+
+function renderEditor() {
+  const d = geneData;
+  const form = document.getElementById('editorForm');
+
+  let valuesHtml = '';
+  for (const [valName, valData] of Object.entries(d.values)) {
+    const attrs = valData.attributes || {};
+    const attrChips = Object.entries(attrs).map(([k, v]) =>
+      `<span class="attr-chip"><span class="attr-key">${k}</span>=<span class="attr-val">${typeof v === 'object' ? JSON.stringify(v) : v}</span></span>`
+    ).join('');
+    valuesHtml += `
+      <tr>
+        <td style="font-weight:600">${valName}</td>
+        <td>${attrChips || '<span style="color:var(--text2)">—</span>'}</td>
+        <td>
+          <button class="remove-btn" onclick="editValue('${valName}')" title="編輯">✏️</button>
+          <button class="remove-btn" onclick="removeValue('${valName}')" title="刪除">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  let pathsHtml = '';
+  for (const [src, targets] of Object.entries(d.evolution_paths)) {
+    pathsHtml += `<div style="margin-bottom:4px"><span style="color:var(--accent)">${src}</span> → <span style="color:var(--green)">${targets.join(', ')}</span></div>`;
+  }
+
+  form.innerHTML = `
+    <div class="field-group">
+      <div class="field-label">描述</div>
+      <textarea class="field-input" id="editDesc" onchange="updateField('description', this.value)">${d.description || ''}</textarea>
+    </div>
+    <div style="display:flex;gap:12px">
+      <div class="field-group" style="flex:1">
+        <div class="field-label">預設值</div>
+        <select class="field-input" id="editDefault" onchange="updateField('default_value', this.value)">
+          ${Object.keys(d.values).map(v => `<option value="${v}" ${v === d.default_value ? 'selected' : ''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field-group" style="flex:1">
+        <div class="field-label">突變倍數</div>
+        <input class="field-input" id="editMutation" type="number" value="${d.mutation_rate_bonus}" step="0.5" min="0.5" max="10" onchange="updateField('mutation_rate_bonus', parseFloat(this.value))">
+      </div>
+    </div>
+
+    <div class="values-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div class="field-label" style="margin:0">枚舉值 (${Object.keys(d.values).length})</div>
+        <button class="add-value-btn" onclick="addNewValue()" style="margin:0;width:auto;padding:4px 10px">+ 新增值</button>
+      </div>
+      <table class="values-table">
+        <thead><tr><th>名稱</th><th>屬性</th><th style="width:60px">操作</th></tr></thead>
+        <tbody>${valuesHtml}</tbody>
+      </table>
+    </div>
+
+    <div class="values-section" style="margin-top:20px">
+      <div class="field-label">演化路徑</div>
+      <div id="pathsContainer" style="background:var(--bg3);padding:12px;border-radius:8px;font-size:13px">
+        ${pathsHtml || '<span style="color:var(--text2)">無演化路徑</span>'}
+      </div>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <input class="field-input" id="pathFrom" placeholder="FROM" style="width:120px">
+        <span style="color:var(--text2);line-height:36px">→</span>
+        <input class="field-input" id="pathTo" placeholder="TO1,TO2" style="flex:1">
+        <button class="btn btn-primary" onclick="addPath()" style="width:auto;padding:8px 16px">新增</button>
+      </div>
+    </div>
+
+    ${geneData.is_custom ? `
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+      <button class="btn btn-danger" onclick="deleteGene()">🗑️ 刪除此基因</button>
+    </div>
+    ` : ''}
+  `;
+}
+
+// ════════════════════════════════════════════════════════
+//  Field Updates
+// ════════════════════════════════════════════════════════
+async function updateField(field, value) {
+  geneData[field] = value;
+  const payload = { ...geneData };
+  // Convert values back to plain objects
+  const vals = {};
+  for (const [k, v] of Object.entries(geneData.values)) {
+    vals[k] = v.attributes || {};
+  }
+  payload.values = vals;
+  await api(`/api/genes/${currentGene}`, { method: 'PUT', body: JSON.stringify(payload) });
+  toast('已更新');
+}
+
+// ════════════════════════════════════════════════════════
+//  Value Management
+// ════════════════════════════════════════════════════════
+function addNewValue() {
+  editingValueName = null;
+  document.getElementById('editValueTitle').textContent = '新增枚舉值';
+  document.getElementById('editValueName').value = '';
+  document.getElementById('editValueName').readonly = false;
+  document.getElementById('editValueAttrs').innerHTML = `
+    <div class="field-group">
+      <div class="field-label">屬性 (每行一個，格式: key=value)</div>
+      <textarea class="field-input" id="newValueAttrs" rows="4" placeholder="label=my_value&#10;speed=1.0&#10;description=說明文字"></textarea>
+    </div>
+  `;
+  document.getElementById('editValueModal').classList.add('active');
+}
+
+function editValue(valName) {
+  editingValueName = valName;
+  document.getElementById('editValueTitle').textContent = `編輯 ${valName}`;
+  document.getElementById('editValueName').value = valName;
+  document.getElementById('editValueName').readonly = true;
+
+  const attrs = geneData.values[valName]?.attributes || {};
+  const lines = Object.entries(attrs).map(([k, v]) => `${k}=${typeof v === 'object' ? JSON.stringify(v) : v}`).join('\n');
+  document.getElementById('editValueAttrs').innerHTML = `
+    <div class="field-group">
+      <div class="field-label">屬性 (每行一個，格式: key=value)</div>
+      <textarea class="field-input" id="newValueAttrs" rows="4">${lines}</textarea>
+    </div>
+  `;
+  document.getElementById('editValueModal').classList.add('active');
+}
+
+function closeValueModal() {
+  document.getElementById('editValueModal').classList.remove('active');
+}
+
+function parseAttrs(text) {
+  const attrs = {};
+  text.split('\n').forEach(line => {
+    line = line.trim();
+    if (!line) return;
+    const idx = line.indexOf('=');
+    if (idx === -1) return;
+    const key = line.substring(0, idx).trim();
+    let val = line.substring(idx + 1).trim();
+    // Try to parse as number
+    if (!isNaN(val) && val !== '') val = parseFloat(val);
+    // Try to parse as JSON
+    else if (val.startsWith('[') || val.startsWith('{')) {
+      try { val = JSON.parse(val); } catch(e) {}
+    }
+    // Parse as boolean
+    else if (val === 'true') val = true;
+    else if (val === 'false') val = false;
+    attrs[key] = val;
+  });
+  return attrs;
+}
+
+async function saveValueEdit() {
+  const valName = document.getElementById('editValueName').value.trim().toUpperCase();
+  if (!valName) { toast('名稱不能為空', true); return; }
+  const attrs = parseAttrs(document.getElementById('newValueAttrs').value);
+
+  if (!editingValueName) {
+    // 新增
+    geneData.values[valName] = { name: valName, attributes: attrs };
+    if (!geneData.evolution_paths[valName]) geneData.evolution_paths[valName] = [];
+  } else {
+    // 編輯
+    geneData.values[valName] = { name: valName, attributes: attrs };
+  }
+
+  await updateGene();
+  closeValueModal();
+}
+
+async function removeValue(valName) {
+  if (!confirm(`確定刪除枚舉值 "${valName}"？`)) return;
+  delete geneData.values[valName];
+  // Remove from evolution paths
+  delete geneData.evolution_paths[valName];
+  for (const src of Object.keys(geneData.evolution_paths)) {
+    geneData.evolution_paths[src] = geneData.evolution_paths[src].filter(t => t !== valName);
+  }
+  await updateGene();
+}
+
+// ════════════════════════════════════════════════════════
+//  Path Management
+// ════════════════════════════════════════════════════════
+async function addPath() {
+  const from = document.getElementById('pathFrom').value.trim().toUpperCase();
+  const toStr = document.getElementById('pathTo').value.trim();
+  if (!from || !toStr) { toast('請填寫 FROM 和 TO', true); return; }
+  const tos = toStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
+  if (!geneData.evolution_paths[from]) geneData.evolution_paths[from] = [];
+  tos.forEach(t => {
+    if (!geneData.evolution_paths[from].includes(t)) {
+      geneData.evolution_paths[from].push(t);
+    }
+  });
+
+  document.getElementById('pathFrom').value = '';
+  document.getElementById('pathTo').value = '';
+  await updateGene();
+}
+
+// ════════════════════════════════════════════════════════
+//  Gene CRUD
+// ════════════════════════════════════════════════════════
+async function updateGene() {
+  const payload = {
+    description: geneData.description,
+    default_value: geneData.default_value,
+    mutation_rate_bonus: geneData.mutation_rate_bonus,
+    values: {},
+    evolution_paths: geneData.evolution_paths,
+    simulation_hooks: geneData.simulation_hooks || {},
+  };
+  for (const [k, v] of Object.entries(geneData.values)) {
+    payload.values[k] = v.attributes || {};
+  }
+  await api(`/api/genes/${currentGene}`, { method: 'PUT', body: JSON.stringify(payload) });
+  renderEditor();
+  renderGraph();
+  toast('已更新');
+}
+
+async function deleteGene() {
+  if (!confirm(`確定刪除基因 "${currentGene}"？`)) return;
+  await api(`/api/genes/${currentGene}`, { method: 'DELETE' });
+  currentGene = null;
+  geneData = null;
+  document.getElementById('emptyState').style.display = 'flex';
+  document.getElementById('editorForm').style.display = 'none';
+  document.getElementById('editorTitle').textContent = '選擇一個基因開始編輯';
+  document.getElementById('editorBadge').innerHTML = '';
+  document.getElementById('graphSvg').style.display = 'none';
+  document.getElementById('graphEmpty').style.display = 'flex';
+  loadGeneList();
+  toast('已刪除');
+}
+
+function showAddGeneModal() {
+  document.getElementById('newGeneName').value = '';
+  document.getElementById('newGeneDesc').value = '';
+  document.getElementById('newGeneMutation').value = '3.0';
+  document.getElementById('newGeneValues').value = '';
+  document.getElementById('newGenePaths').value = '';
+  document.getElementById('addGeneModal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('addGeneModal').classList.remove('active');
+}
+
+async function createGene() {
+  const name = document.getElementById('newGeneName').value.trim().toLowerCase();
+  if (!name) { toast('請填寫基因名稱', true); return; }
+
+  // Parse values
+  const values = {};
+  const valLines = document.getElementById('newGeneValues').value.split('\n').filter(l => l.trim());
+  for (const line of valLines) {
+    const parts = line.split(':');
+    const valName = parts[0].trim().toUpperCase();
+    const attrs = {};
+    if (parts[1]) {
+      parts[1].split(',').forEach(p => {
+        const [k, v] = p.trim().split('=');
+        if (k) {
+          let val = v?.trim() || '';
+          if (!isNaN(val) && val !== '') val = parseFloat(val);
+          attrs[k.trim()] = val;
+        }
+      });
+    }
+    values[valName] = attrs;
+  }
+
+  if (Object.keys(values).length === 0) {
+    toast('至少需要一個枚舉值', true); return;
+  }
+
+  // Parse paths
+  const evolution_paths = {};
+  const pathLines = document.getElementById('newGenePaths').value.split('\n').filter(l => l.trim());
+  for (const line of pathLines) {
+    const [from, toStr] = line.split('->');
+    if (from && toStr) {
+      const fromName = from.trim().toUpperCase();
+      const toNames = toStr.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      evolution_paths[fromName] = toNames;
+    }
+  }
+
+  const payload = {
+    name,
+    description: document.getElementById('newGeneDesc').value,
+    mutation_rate_bonus: parseFloat(document.getElementById('newGeneMutation').value) || 3.0,
+    values,
+    evolution_paths,
+    default_value: Object.keys(values)[0],
+  };
+
+  const result = await api('/api/genes', { method: 'POST', body: JSON.stringify(payload) });
+  if (result.error) { toast(result.error, true); return; }
+
+  closeModal();
+  toast(`基因 "${name}" 已建立`);
+  loadGeneList();
+  selectGene(name);
+}
+
+// ════════════════════════════════════════════════════════
+//  SVG Graph Visualization
+// ════════════════════════════════════════════════════════
+async function renderGraph() {
+  if (!currentGene) return;
+
+  const data = await api(`/api/evolution-graph/${currentGene}`);
+  const svg = document.getElementById('graphSvg');
+  const canvas = document.getElementById('graphCanvas');
+  document.getElementById('graphEmpty').style.display = 'none';
+  svg.style.display = 'block';
+
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  // Clear existing (keep defs)
+  const defs = svg.querySelector('defs');
+  svg.innerHTML = '';
+  svg.appendChild(defs);
+
+  if (data.nodes.length === 0) return;
+
+  // Layout: circular layout
+  const cx = W / 2;
+  const cy = H / 2;
+  const radius = Math.min(W, H) * 0.32;
+  const nodePositions = {};
+
+  data.nodes.forEach((node, i) => {
+    const angle = (2 * Math.PI * i / data.nodes.length) - Math.PI / 2;
+    nodePositions[node.id] = {
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle),
+    };
+  });
+
+  // Draw edges
+  data.edges.forEach(edge => {
+    const from = nodePositions[edge.source];
+    const to = nodePositions[edge.target];
+    if (!from || !to) return;
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', from.x);
+    line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);
+    line.setAttribute('y2', to.y);
+    line.setAttribute('class', 'edge-line' + (edge.bidirectional ? ' bidirectional' : ''));
+    svg.appendChild(line);
+  });
+
+  // Draw nodes
+  const nodeColors = ['#6c63ff', '#4ecdc4', '#f39c12', '#e91e63', '#3498db', '#2ecc71', '#9b59b6', '#e74c3c'];
+  data.nodes.forEach((node, i) => {
+    const pos = nodePositions[node.id];
+    const color = nodeColors[i % nodeColors.length];
+
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', pos.x);
+    circle.setAttribute('cy', pos.y);
+    circle.setAttribute('r', 24);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('class', 'node-circle');
+    circle.setAttribute('stroke', 'white');
+    circle.setAttribute('stroke-width', '2');
+    svg.appendChild(circle);
+
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', pos.x);
+    label.setAttribute('y', pos.y);
+    label.setAttribute('class', 'node-label');
+    label.textContent = node.id.length > 6 ? node.id.substring(0, 6) : node.id;
+    svg.appendChild(label);
+
+    // Full name below
+    const fullLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    fullLabel.setAttribute('x', pos.x);
+    fullLabel.setAttribute('y', pos.y + 36);
+    fullLabel.setAttribute('text-anchor', 'middle');
+    fullLabel.setAttribute('fill', '#8b90a5');
+    fullLabel.setAttribute('font-size', '9');
+    fullLabel.textContent = node.id;
+    svg.appendChild(fullLabel);
+  });
+
+  // Center label
+  const centerLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  centerLabel.setAttribute('x', cx);
+  centerLabel.setAttribute('y', cy);
+  centerLabel.setAttribute('text-anchor', 'middle');
+  centerLabel.setAttribute('fill', '#8b90a5');
+  centerLabel.setAttribute('font-size', '12');
+  centerLabel.textContent = currentGene;
+  svg.appendChild(centerLabel);
+}
+
+// ════════════════════════════════════════════════════════
+//  Save / Reload
+// ════════════════════════════════════════════════════════
+async function saveConfig() {
+  const result = await api('/api/save', { method: 'POST' });
+  if (result.success) toast('✅ 配置已儲存至 ' + result.path);
+  else toast('儲存失敗: ' + result.error, true);
+}
+
+async function reloadConfig() {
+  const result = await api('/api/reload', { method: 'POST' });
+  if (result.success) {
+    toast('✅ 已重新載入');
+    loadGeneList();
+    if (currentGene) selectGene(currentGene);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  Init
+// ════════════════════════════════════════════════════════
+loadGeneList();
+
+// Resize graph on window resize
+window.addEventListener('resize', () => { if (currentGene) renderGraph(); });
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => {
+    if (e.target === el) el.classList.remove('active');
+  });
+});
+</script>
+</body>
+</html>

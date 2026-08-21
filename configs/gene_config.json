@@ -1,0 +1,446 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "SimLife Evolution System — 基因演化路徑配置檔",
+    "author": "Game Design Team",
+    "note": "設計師可直接編輯此檔案新增基因、調整演化路徑，無需修改 Python 程式碼"
+  },
+  "mutation_defaults": {
+    "base_mutation_rate": 0.01,
+    "enum_mutation_bonus": 3.0,
+    "continuous_gaussian_std": 0.1,
+    "thermal_strength_std": 0.1,
+    "thermal_body_temp_std": 1.0
+  },
+  "enum_genes": {
+    "locomotion": {
+      "description": "移動方式 — 決定速度與地形通行",
+      "default_value": "WALK",
+      "mutation_rate_bonus": 3.0,
+      "attributes_schema": {
+        "label": "string",
+        "speed_mult": "float",
+        "passable_terrain": "list[string]"
+      },
+      "values": {
+        "CRAWL": {
+          "label": "crawling",
+          "speed_mult": 0.3,
+          "passable_terrain": [
+            "all"
+          ]
+        },
+        "WALK": {
+          "label": "walking",
+          "speed_mult": 1.0,
+          "passable_terrain": [
+            "grassland",
+            "desert",
+            "forest",
+            "snow"
+          ]
+        },
+        "RUN": {
+          "label": "running",
+          "speed_mult": 1.8,
+          "passable_terrain": [
+            "grassland",
+            "desert"
+          ]
+        },
+        "FLY": {
+          "label": "flying",
+          "speed_mult": 3.0,
+          "passable_terrain": [
+            "all"
+          ]
+        },
+        "SWIM": {
+          "label": "swimming",
+          "speed_mult": 0.8,
+          "passable_terrain": [
+            "ocean",
+            "river",
+            "swamp"
+          ]
+        }
+      },
+      "evolution_paths": {
+        "CRAWL": [
+          "WALK",
+          "FLY",
+          "SWIM"
+        ],
+        "WALK": [
+          "CRAWL",
+          "RUN",
+          "FLY",
+          "SWIM"
+        ],
+        "RUN": [
+          "WALK",
+          "FLY"
+        ],
+        "FLY": [
+          "WALK",
+          "RUN"
+        ],
+        "SWIM": [
+          "CRAWL",
+          "WALK"
+        ]
+      }
+    },
+    "digestive": {
+      "description": "消化系統 — 決定可攝取食物類型",
+      "default_value": "OMNIVORE",
+      "mutation_rate_bonus": 3.0,
+      "attributes_schema": {
+        "label": "string",
+        "edible_prefixes": "list[string]"
+      },
+      "values": {
+        "HERBIVORE": {
+          "label": "herbivore",
+          "edible_prefixes": [
+            "plant",
+            "fruit",
+            "fungus"
+          ]
+        },
+        "CARNIVORE": {
+          "label": "carnivore",
+          "edible_prefixes": [
+            "meat",
+            "corpse"
+          ]
+        },
+        "OMNIVORE": {
+          "label": "omnivore",
+          "edible_prefixes": [
+            "plant",
+            "fruit",
+            "fungus",
+            "meat",
+            "corpse"
+          ]
+        },
+        "PLANKTIVORE": {
+          "label": "planktivore",
+          "edible_prefixes": [
+            "plankton",
+            "algae"
+          ]
+        }
+      },
+      "evolution_paths": {
+        "HERBIVORE": [
+          "OMNIVORE",
+          "PLANKTIVORE"
+        ],
+        "CARNIVORE": [
+          "OMNIVORE"
+        ],
+        "OMNIVORE": [
+          "HERBIVORE",
+          "CARNIVORE"
+        ],
+        "PLANKTIVORE": [
+          "HERBIVORE",
+          "OMNIVORE"
+        ]
+      }
+    },
+    "mating": {
+      "description": "交配策略 — 決定繁殖方式",
+      "default_value": "SEXUAL",
+      "mutation_rate_bonus": 2.0,
+      "attributes_schema": {
+        "label": "string"
+      },
+      "values": {
+        "SEXUAL": {
+          "label": "sexual"
+        },
+        "ASEXUAL": {
+          "label": "asexual"
+        }
+      },
+      "evolution_paths": {
+        "SEXUAL": [
+          "ASEXUAL"
+        ],
+        "ASEXUAL": [
+          "SEXUAL"
+        ]
+      }
+    },
+    "territory": {
+      "description": "領域行為 — 與 sociability 配合使用",
+      "default_value": "SOLO",
+      "mutation_rate_bonus": 2.0,
+      "attributes_schema": {
+        "label": "string"
+      },
+      "values": {
+        "SOLO": {
+          "label": "solo"
+        },
+        "PACK": {
+          "label": "pack"
+        },
+        "NOMADIC": {
+          "label": "nomadic"
+        }
+      },
+      "evolution_paths": {
+        "SOLO": [
+          "PACK",
+          "NOMADIC"
+        ],
+        "PACK": [
+          "SOLO",
+          "NOMADIC"
+        ],
+        "NOMADIC": [
+          "SOLO",
+          "PACK"
+        ]
+      }
+    }
+  },
+  "custom_genes": {
+    "nocturnality": {
+      "description": "夜行性基因 — 影響日夜時段的感知、速度與隱蔽性",
+      "default_value": "DIURNAL",
+      "mutation_rate_bonus": 3.0,
+      "attributes_schema": {
+        "label": "string",
+        "night_vision": "float",
+        "speed_mult_day": "float",
+        "speed_mult_night": "float",
+        "stealth_night": "float",
+        "description": "string"
+      },
+      "values": {
+        "DIURNAL": {
+          "label": "day_active",
+          "night_vision": 0.0,
+          "speed_mult_day": 1.2,
+          "speed_mult_night": 0.5,
+          "stealth_night": 0.1,
+          "description": "白天活躍，夜晚感知力大幅下降"
+        },
+        "NOCTURNAL": {
+          "label": "night_active",
+          "night_vision": 0.8,
+          "speed_mult_day": 0.5,
+          "speed_mult_night": 1.3,
+          "stealth_night": 0.9,
+          "description": "夜晚活躍，白天速度降低、易被發現"
+        },
+        "CREPUSCULAR": {
+          "label": "twilight_active",
+          "night_vision": 0.4,
+          "speed_mult_day": 0.9,
+          "speed_mult_night": 0.9,
+          "stealth_night": 0.5,
+          "description": "晨昏活動，日夜性能均衡"
+        }
+      },
+      "evolution_paths": {
+        "DIURNAL": [
+          "CREPUSCULAR",
+          "NOCTURNAL"
+        ],
+        "NOCTURNAL": [
+          "CREPUSCULAR",
+          "DIURNAL"
+        ],
+        "CREPUSCULAR": [
+          "DIURNAL",
+          "NOCTURNAL"
+        ]
+      },
+      "simulation_hooks": {
+        "apply_speed_modifier": true,
+        "apply_stealth": true,
+        "affects_foraging": true,
+        "affects_predation": true
+      },
+      "enabled": true
+    },
+    "ocean_adaptation": {
+      "description": "海洋適應基因 — 決定水下生存能力",
+      "default_value": "LAND_BOUND",
+      "mutation_rate_bonus": 4.0,
+      "attributes_schema": {
+        "label": "string",
+        "swim_speed": "float",
+        "breath_holding": "float",
+        "pressure_resistance": "float",
+        "oxygen_consumption": "float",
+        "land_movement_penalty": "float",
+        "description": "string"
+      },
+      "values": {
+        "LAND_BOUND": {
+          "label": "land_bound",
+          "swim_speed": 0.0,
+          "breath_holding": 0.0,
+          "pressure_resistance": 0.0,
+          "oxygen_consumption": 999.0,
+          "land_movement_penalty": 0.0,
+          "description": "完全無法在水中生存"
+        },
+        "AMPHIBIOUS": {
+          "label": "amphibious",
+          "swim_speed": 0.6,
+          "breath_holding": 0.5,
+          "pressure_resistance": 0.3,
+          "oxygen_consumption": 1.5,
+          "land_movement_penalty": 0.1,
+          "description": "可在水陸兩棲，但兩者都不精通"
+        },
+        "AQUATIC": {
+          "label": "aquatic",
+          "swim_speed": 1.5,
+          "breath_holding": 0.9,
+          "pressure_resistance": 0.8,
+          "oxygen_consumption": 0.8,
+          "land_movement_penalty": 0.6,
+          "description": "高度適應水生環境，陸地行動笨拙"
+        },
+        "DEEP_SEA": {
+          "label": "deep_sea",
+          "swim_speed": 2.0,
+          "breath_holding": 1.0,
+          "pressure_resistance": 1.0,
+          "oxygen_consumption": 0.5,
+          "land_movement_penalty": 0.9,
+          "description": "深海生物，可承受極端水壓，幾乎無法上岸"
+        }
+      },
+      "evolution_paths": {
+        "LAND_BOUND": [
+          "AMPHIBIOUS"
+        ],
+        "AMPHIBIOUS": [
+          "LAND_BOUND",
+          "AQUATIC"
+        ],
+        "AQUATIC": [
+          "AMPHIBIOUS",
+          "DEEP_SEA"
+        ],
+        "DEEP_SEA": [
+          "AQUATIC"
+        ]
+      },
+      "simulation_hooks": {
+        "enables_ocean_terrain": true,
+        "affects_resource_access": true,
+        "affects_predation": true,
+        "water_energy_drain": true
+      },
+      "enabled": true
+    },
+    "thermal_insulation": {
+      "description": "體表絕緣基因 — 影響極端溫度的耐受力與能量消耗",
+      "default_value": "FUR",
+      "mutation_rate_bonus": 2.5,
+      "attributes_schema": {
+        "label": "string",
+        "cold_resistance": "float",
+        "heat_resistance": "float",
+        "weight_penalty": "float",
+        "description": "string"
+      },
+      "values": {
+        "BARE_SKIN": {
+          "label": "bare_skin",
+          "cold_resistance": 0.0,
+          "heat_resistance": 0.2,
+          "weight_penalty": 0.0,
+          "description": "無毛皮，極端環境下能耗極高"
+        },
+        "FUR": {
+          "label": "fur",
+          "cold_resistance": 0.5,
+          "heat_resistance": 0.0,
+          "weight_penalty": 0.05,
+          "description": "一般毛皮，抗寒但不耐熱"
+        },
+        "FEATHERS": {
+          "label": "feathers",
+          "cold_resistance": 0.4,
+          "heat_resistance": 0.3,
+          "weight_penalty": 0.02,
+          "description": "羽毛覆蓋，輕量且冬暖夏涼"
+        },
+        "SCALES": {
+          "label": "scales",
+          "cold_resistance": 0.2,
+          "heat_resistance": 0.7,
+          "weight_penalty": 0.08,
+          "description": "鱗片覆蓋，耐高溫但不耐寒"
+        }
+      },
+      "evolution_paths": {
+        "BARE_SKIN": [
+          "FUR",
+          "FEATHERS",
+          "SCALES"
+        ],
+        "FUR": [
+          "BARE_SKIN",
+          "FEATHERS"
+        ],
+        "FEATHERS": [
+          "BARE_SKIN",
+          "FUR",
+          "SCALES"
+        ],
+        "SCALES": [
+          "BARE_SKIN",
+          "FEATHERS"
+        ]
+      },
+      "simulation_hooks": {
+        "modifies_thermal_penalty": true,
+        "affects_speed": true
+      },
+      "enabled": true
+    }
+  },
+  "terrain_types": {
+    "grassland": {
+      "label": "草原",
+      "resource_multiplier": 1.0
+    },
+    "desert": {
+      "label": "沙漠",
+      "resource_multiplier": 0.3
+    },
+    "forest": {
+      "label": "森林",
+      "resource_multiplier": 1.5
+    },
+    "snow": {
+      "label": "雪地",
+      "resource_multiplier": 0.4
+    },
+    "ocean": {
+      "label": "海洋",
+      "resource_multiplier": 0.8
+    },
+    "river": {
+      "label": "河流",
+      "resource_multiplier": 0.6
+    },
+    "swamp": {
+      "label": "沼澤",
+      "resource_multiplier": 1.2
+    }
+  }
+}
